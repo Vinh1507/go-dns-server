@@ -1,10 +1,16 @@
 # go-dns-server
 
+Gói tin question của DNS Message
+
 ![alt text](./images/dns-question-package.png)
+
+Gói tin answer của DNS Message
+
+Tương tự như gói tin question, nhưng có thêm body của phần answers, trong đó có bao gồm IP được phân giải
+
 ![alt text](./images/dns-answer-package.png)
 
-![alt text](./images/logical-flow.png)
-
+Ví dụ về việc sử dụng dig mặc định
 
 ```
 vinh@vinhbh:~/Documents$ dig +trace google.com
@@ -57,3 +63,38 @@ google.com.		300	IN	A	172.217.25.14
 ;; Received 55 bytes from 216.239.34.10#53(ns2.google.com) in 39 ms
 
 ```
+
+
+## Build DNS Server recursive resolver bắt đầu từ Root Server
+
+[Src code](./dns-server/dns-server.go)
+
+Sử dụng luồng logic sau:
+
+![alt text](./images/logical-flow.png)
+
+Logic cụ thể trong phần đệ quy
+
+![alt text](./images/logic-loop-detailed.png)
+
+1. Server query được khởi tạo bằng danh sách các root servers (bắt đầu từ root servers)
+2. Bắt đầu query server với danh sách các IP
+3. Nếu server có đủ thẩm quyền (authoritative) thì sẽ có response.Answer, và trong response.Answer sẽ có IP được phân giải (kết quả)
+4. Nếu server không đủ thẩm quyền (isn't authoritative) tiến hành parse response để lấy các nameserver, sau đó tiến hành vào response.Extra (phần Additional của response), xảy ra 01 trong 02 kịch bản sau
+5. a. Nếu extras (additionals) có Resource Record type A, thì tức là có IP bên trong, duyệt để lấy tất cả IP này và thực hiện lại bước 2
+![alt text](./images/additionals-include-ips.png)
+
+5. b. Nếu extras (additionals) không có IP, bắt đầu lặp lại query root server nhưng với body có name là tên nameserver vừa phân giải được (ví dụ ns1.google.com chứ không còn là name của client)
+
+
+
+
+
+
+
+
+
+
+
+## References:
+[Youtube - Write a DNS Server (Resolver)](https://www.youtube.com/watch?v=V3EAssIsQNI&t=6222s&ab_channel=EdwardViaene)
