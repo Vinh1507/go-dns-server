@@ -19,8 +19,8 @@ var (
 	ttl              = uint32(60) // TTL được đặt thành 60 giây
 
 	// Các hằng số để xác định tỉ lệ phân phối
-	region1Ratio = 2
-	region2Ratio = 1
+	region1Ratio = 6
+	region2Ratio = 4
 )
 
 // Biến đếm số lần truy vấn cho từng region
@@ -43,29 +43,35 @@ func checkHealth(url string) bool {
 }
 
 func getRegionIP() string {
-	// Kiểm tra sức khỏe của từng region
+	// Health check của từng region
 	region1Healthy := checkHealth(region1HealthURL)
 	region2Healthy := checkHealth(region2HealthURL)
 
 	// Tính toán tỉ lệ dựa trên số lần truy vấn
 	totalRequests := region1Count + region2Count
-	var region1RatioWeight, region2RatioWeight int
+	var region1RatioWeight, region2RatioWeight float64
 	if totalRequests > 0 {
-		region1RatioWeight = region1Count / region1Ratio
-		region2RatioWeight = region2Count / region2Ratio
+		region1RatioWeight = float64(region1Count) / float64(region1Ratio)
+		region2RatioWeight = float64(region2Count) / float64(region2Ratio)
+
 	}
 
-	fmt.Println(region1Count, region2Count)
+	fmt.Printf("region1: %d, region2: %d\n", region1Count, region2Count)
+
 	// Quyết định region dựa trên tỉ lệ
 	if region1Healthy && !region2Healthy {
+		fmt.Println("Return region1\n==============\n")
 		return region1IP
 	} else if !region1Healthy && region2Healthy {
+		fmt.Println("Return region2\n==============\n")
 		return region2IP
 	} else if region1Healthy && region2Healthy {
 		if region1RatioWeight < region2RatioWeight {
 			region1Count++
+			fmt.Println("Return region1\n==============\n")
 			return region1IP
 		}
+		fmt.Println("Return region2\n==============\n")
 		region2Count++
 		return region2IP
 	}
@@ -104,7 +110,7 @@ func handleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 }
 
 func main() {
-	dns.HandleFunc(".", handleDNSRequest)
+	dns.HandleFunc("live.", handleDNSRequest)
 
 	server := &dns.Server{Addr: ":8053", Net: "udp"}
 	log.Printf("Starting DNS server on port 8053\n")
