@@ -57,11 +57,13 @@ func recursiveResolve(servers []string, name string, qtype uint16) (*dns.Msg, er
 	r := new(dns.Msg)
 	r.SetQuestion(name, qtype)
 
-	fmt.Println("SERVERS:", servers)
+	// fmt.Println("SERVERS:", servers)
 
 	new_servers := make([]string, 0)
 
 	servers_map := make(map[string]int, 0)
+
+	nameservers := make([]string, 0)
 
 	for _, rootServer := range servers {
 		fmt.Println(rootServer)
@@ -78,12 +80,13 @@ func recursiveResolve(servers []string, name string, qtype uint16) (*dns.Msg, er
 			}
 		}
 
-		namespaces_map := make(map[string]int, 0)
+		nameservers_map := make(map[string]int, 0)
+
 		for _, rr := range response.Ns {
 			if nsRR, ok := rr.(*dns.NS); ok {
 				if nsRR.Hdr.Rrtype == dns.TypeNS {
-					fmt.Println("Namespace: ", nsRR)
-					namespaces_map[nsRR.Ns] = 1
+					nameservers_map[nsRR.Ns] = 1
+					nameservers = append(nameservers, nsRR.Ns)
 				}
 			}
 
@@ -91,10 +94,11 @@ func recursiveResolve(servers []string, name string, qtype uint16) (*dns.Msg, er
 
 		for _, rr := range response.Extra {
 			if aRR, ok := rr.(*dns.A); ok {
-				namespace := aRR.Hdr.Name
-				_, ns_exists := namespaces_map[namespace]
+				nameserver := aRR.Hdr.Name
+				_, ns_exists := nameservers_map[nameserver]
 				_, server_exists := servers_map[aRR.A.String()]
 				if ns_exists && !server_exists {
+					// fmt.Println("extra", aRR)
 					new_servers = append(new_servers, aRR.A.String())
 					servers_map[aRR.A.String()] = 1
 				}
@@ -104,7 +108,25 @@ func recursiveResolve(servers []string, name string, qtype uint16) (*dns.Msg, er
 
 	if len(new_servers) > 0 {
 		return recursiveResolve(new_servers, name, qtype)
+	} else {
+		for _, ns := range nameservers {
+			response, err := recursiveResolve(rootServers, ns, dns.TypeA)
+			if err != nil {
+				fmt.Printf("Warning: lookup of nameserver %s failed\n", ns)
+			} else {
+				for _, rr := range response.Answer {
+					if aRR, ok := rr.(*dns.A); ok {
+						new_servers = append(new_servers, aRR.A.String())
+					}
+				}
+			}
+		}
+
+		if len(new_servers) > 0 {
+			return recursiveResolve(new_servers, name, qtype)
+		}
 	}
+
 	return nil, log.Output(2, "All root server queries failed")
 }
 
