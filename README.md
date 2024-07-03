@@ -1,6 +1,6 @@
 # go-dns-server
 
-## Tổng quan DNS Message
+## 1. Tổng quan DNS Message
 Gói tin question của DNS Message
 
 ![alt text](./images/dns-question-package.png)
@@ -66,7 +66,7 @@ google.com.		300	IN	A	172.217.25.14
 ```
 
 
-## Build DNS Server recursive resolver bắt đầu từ Root Server
+## 2. Build DNS Server recursive resolver bắt đầu từ Root Server
 
 [Src code](./dns-server/dns-server.go)
 
@@ -122,7 +122,7 @@ google.com.             300     IN      A       172.217.25.14
 [Youtube - Write a DNS Server (Resolver)](https://www.youtube.com/watch?v=V3EAssIsQNI&t=6222s&ab_channel=EdwardViaene)
 
 
-## Build DNS Server sử dụng thuât toán Ratio (đánh trọng số)
+## 3. Build DNS Server sử dụng thuât toán Ratio (đánh trọng số cho từng region)
 
 [Src code](./ratio-dns/ratio-dns.go)
 
