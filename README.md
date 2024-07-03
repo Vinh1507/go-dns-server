@@ -206,7 +206,7 @@ Kết quả:
 dig @localhost -p 8053 app1.vt.live
 ```
 
-Output 
+Output: Chỉ trả về IP của region1 (192.168.144.132)
 
 ```
 ; <<>> DiG 9.18.18-0ubuntu2.1-Ubuntu <<>> @localhost -p 8053 app1.vt.live
